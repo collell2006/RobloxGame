@@ -1,0 +1,21 @@
+{
+  "name": "MiPrimerJuego",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "Core": {
+        "$path": "Core"
+      }
+    },
+    "ReplicatedStorage": {
+      "Config": {
+        "$path": "Config"
+      }
+    },
+    "StarterGui": {
+      "UI": {
+        "$path": "UI"
+      }
+    }
+  }
+}

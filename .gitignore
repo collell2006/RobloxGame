@@ -1,0 +1,13 @@
+## Git ignore for Roblox projects
+# Roblox place files (binary)
+*.rbxl
+*.rbxlx
+# Roblox Studio temporary files
+*.player
+# OS files
+.DS_Store
+Thumbs.db
+# Logs
+*.log
+# Build artifacts
+/build/
