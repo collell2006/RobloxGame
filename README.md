@@ -1,6 +1,6 @@
-# 🎮 MiPrimerJuego – Obby & Monetización en Roblox
+# 🎮 MiPrimerJuego – Obby, Renacimientos & Estelas en Roblox
 
-Juego completo estilo **Obby (Obstacle Course)** con mecánicas de parkour, plataformas desvanecientes, láseres, sistema de monedas giratorias, tabla de clasificación (`leaderstats`), persistencia de datos segura (`DataStoreService`) y tienda integrada con **Game Pass VIP** y **Developer Products**.
+Juego completo estilo **Obby (Obstacle Course)** con mecánicas avanzadas de parkour, trampolines de impulso, cintas aceleradoras, plataformas desvanecientes, rayos láser, sistema de **Renacimientos (Rebirths)** con multiplicadores de monedas, **Tienda de Estelas Cosméticas (Trails)** para gastar monedas del juego, persistencia segura con `DataStoreService` y monetización con Robux reales vía **Game Pass VIP** y **Developer Products**.
 
 ---
 
@@ -8,91 +8,63 @@ Juego completo estilo **Obby (Obstacle Course)** con mecánicas de parkour, plat
 
 ```
 MiPrimerJuego/
-├── default.project.json           # Configuración para Rojo (opcional)
-├── CHANGELOG.md                   # Historial de versiones y mejoras
+├── default.project.json           # Configuración para sincronización con Rojo
+├── CHANGELOG.md                   # Historial de versiones y mejoras (v1.1.0)
 ├── README.md                      # Documentación del proyecto
 │
 ├── Config/
 │   └── Products.lua               # IDs de Game Passes y Productos de Desarrollador
 │
 ├── Core/                          # Lógica del Servidor (ServerScriptService)
-│   ├── Init.lua                   # Script principal que orquesta el juego
-│   ├── ObbySetup.lua              # Generador procedural del Obby (5 etapas + lava)
+│   ├── Init.lua                   # Orquestador principal del servidor
+│   ├── ObbySetup.lua              # Generador del Obby (5 etapas, trampolines, boosters y lava)
 │   ├── CheckpointManager.lua      # Control de niveles, respawn y checkpoints
-│   ├── CoinSpawner.lua            # Generación y animación de monedas doradas
-│   ├── DataStoreHandler.lua       # Guardado seguro (Coins, Nivel) + leaderstats
+│   ├── CoinSpawner.lua            # Monedas doradas giratorias con partículas y multiplicador
+│   ├── RebirthManager.lua         # Sistema de Renacimientos y multiplicadores de prestigio
+│   ├── TrailManager.lua           # Sistema de estelas cosméticas en el personaje
+│   ├── DataStoreHandler.lua       # Guardado seguro (Monedas, Nivel, Renacer, Inventario)
 │   ├── MarketplaceHandler.lua     # Compras de Game Pass y ProcessReceipt
-│   └── RemoteEventsSetup.lua      # Creación automática de eventos cliente-servidor
+│   └── RemoteEventsSetup.lua      # Inicialización automática de eventos de red
 │
 └── UI/                            # Lógica del Cliente (StarterGui)
-    ├── HUD.client.lua             # Contador de monedas, nivel actual y botones
-    ├── StoreGui.client.lua        # Ventana modal de la tienda de mejoras
+    ├── HUD.client.lua             # Estadísticas (Monedas, Nivel, Renacer, Multiplicador, Estela)
+    ├── StoreGui.client.lua        # Tienda interactiva con 2 pestañas (Robux y Estelas)
     └── NotificationHandler.client.lua # Banners de aviso animados (éxito/error)
 ```
 
 ---
 
-## 🚀 Cómo ponerlo a funcionar en Roblox Studio (Paso a Paso)
+## 🌟 Novedades de la Versión 1.1.0
 
-Dado que ya tienes **Roblox Studio abierto**, sigue estos sencillos pasos:
+1. **Economía de Monedas con Utilidad Real (Estelas Cosméticas):**
+   - Los jugadores ahora tienen un motivo para coleccionar monedas: comprar estelas que dejan un rastro de partículas al correr y saltar.
+   - 4 estelas disponibles: *Arcoíris Cósmico*, *Fuego Volcánico*, *Ciber Neón* y *Oro Divino*.
+   - El inventario y la estela equipada se guardan en la nube para que nunca se pierdan.
 
-### 1. Elige una plantilla base
-En Roblox Studio ve a **New** y selecciona **Baseplate** (el mapa plano estándar).
+2. **Bucle de Retención Infinito: Renacimientos (Rebirths):**
+   - Al llegar al Nivel 5 (Isla de Victoria), los jugadores pueden renacer en el portal místico o mediante el botón en pantalla.
+   - Cada renacimiento otorga un **+50% de monedas permanente** acumulativo, incentivando a pasarse el juego varias veces.
 
-### 2. Configura las carpetas en el explorador (*Explorer*)
-En el panel lateral derecho (*Explorer*), asegúrate de tener:
-- En **ServerScriptService**:
-  - Crea una carpeta llamada `Core` (o arrastra los scripts de `Core/` aquí).
-- En **ReplicatedStorage**:
-  - Crea una carpeta llamada `Config` y coloca dentro `Products.lua`.
-- En **StarterGui**:
-  - Crea una carpeta llamada `UI` (o arrastra los 3 scripts `.client.lua` de `UI/` aquí).
+3. **Mecánicas de Parkour Divertidas:**
+   - **Trampolines (Jump Pads):** Impulsan al jugador a gran altura y velocidad para sortear abismos gigantescos.
+   - **Cintas Aceleradoras (Speed Boosters):** Duplican la velocidad del personaje temporalmente.
 
-### 3. Asignar los tipos de Script en Roblox Studio:
-- **Scripts del Servidor** (en `ServerScriptService`):
-  - `Init.lua` (Script normal).
-  - Todos los demás módulos (`DataStoreHandler`, `MarketplaceHandler`, `ObbySetup`, etc.) deben ser **ModuleScript** o Scripts normales invocados por `Init`.
-- **Scripts del Cliente** (en `StarterGui`):
-  - `HUD.client.lua`, `StoreGui.client.lua` y `NotificationHandler.client.lua` deben ser creados como **LocalScript**.
-
-### 4. Habilitar la API de Guardado (DataStore) en Studio
-Para probar el guardado de datos en local:
-1. En Studio ve a **Home → Game Settings**.
-2. Si te pide publicar el juego primero, dale un nombre temporal (ej. *Mi Primer Obby*).
-3. Entra a **Security** y activa:
-   - ✅ **Enable Studio Access to API Services** (Permitir acceso de Studio a los servicios API).
-4. Haz clic en **Save**.
-
-### 5. ¡A jugar! (Play)
-1. Pulsa **Play** (F5) en Roblox Studio.
-2. Verás cómo automáticamente:
-   - Se construye el Obby con 5 niveles flotantes y el piso de lava roja al fondo.
-   - Aparecen las monedas doradas girando en el aire.
-   - En la esquina superior derecha verás la tabla de clasificación (`Nivel` y `Monedas`).
-   - En la pantalla se cargará el HUD con tu saldo y nivel actual.
-   - Pulsa el botón **🛒 TIENDA** para probar la interfaz de compras.
-   - Pulsa **🔄 REINICIAR** o tírate a la lava para comprobar que reapareces exactamente en tu último checkpoint alcanzado.
+4. **Tienda Multi-Pestaña:**
+   - Pestaña 1: **💎 ROBUX & PASES** (Monetización del creador).
+   - Pestaña 2: **✨ ESTELAS COSMÉTICAS** (Tienda dentro del juego que consume monedas recolectadas).
 
 ---
 
-## 💰 Conexión de Monetización Real
+## 🚀 Cómo probarlo en Roblox Studio
 
-Cuando quieras habilitar compras con Robux reales:
-1. En la web de Roblox (o desde Studio en *Game Settings → Monetization* / *Create*):
-   - Crea un **Pass** (Pase de juego) para el VIP.
-   - Crea un **Developer Product** para el paquete de 500 monedas.
-2. Copia los IDs numéricos generados.
-3. Abre `Config/Products.lua` y sustituye los números de ejemplo:
-   ```lua
-   GamePasses = {
-       PremiumPass = TU_ID_DE_PASE_AQUI,
-   },
-   DeveloperProducts = {
-       CoinPack = TU_ID_DE_PRODUCTO_AQUI,
-   }
-   ```
-
----
-
-## 🛠️ Herramientas avanzadas (Opcional)
-Si usas [Rojo](https://rojo.space/), simplemente corre `rojo serve` en esta carpeta y conecta el plugin de Rojo en Roblox Studio para sincronizar todo automáticamente en 1 segundo.
+1. **Abre Roblox Studio** con un mapa nuevo (**Baseplate**).
+2. **Copia los archivos a sus carpetas:**
+   - En **ServerScriptService**: Coloca los scripts de `Core/` (con `Init.lua` como Script ejecutable).
+   - En **ReplicatedStorage**: Coloca la carpeta `Config/` con `Products.lua`.
+   - En **StarterGui**: Coloca los scripts de `UI/` como `LocalScript`.
+3. **Activa el guardado de datos en Studio:**
+   - **Game Settings** → **Security** → activa **Enable Studio Access to API Services**.
+4. **Pulsa Play (F5):**
+   - Recoge monedas en el camino y pisa los trampolines verdes para volar.
+   - Abre la tienda con el botón **🛒 TIENDA**, cambia a la pestaña de **✨ ESTELAS** y equípate tu primera estela cuando ahorres monedas.
+   - Llega a la meta (Nivel 5) y entra en el portal morado para activar tu primer **Renacimiento**.

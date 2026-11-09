@@ -1,46 +1,47 @@
 # CHANGELOG
 
-## [1.0.0] - 2026-11-06 (Versión Completa y Funcional)
+## [1.1.0] - 2026-11-09 (Actualización de Retención y Cosméticos)
 
-### Servidor (Backend & Gameplay)
-- **Init.lua**: Orquestación limpia y centralizada de todos los servicios.
-- **ObbySetup.lua**: Generador completo de 5 etapas temáticas:
-  - Etapa 1: Plataformas de salto básicas.
-  - Etapa 2: Cilindros de madera con alturas variables.
-  - Etapa 3: Plataformas desvanecientes que caen al pisarlas.
-  - Etapa 4: Puentes con rayos láser que causan daño letal.
-  - Etapa 5: Isla de victoria con trofeo dorado.
-  - Piso letal (Kill Floor): Lava de neón roja que reinicia la vida al caer.
-- **CheckpointManager.lua**:
-  - Detección de avance de checkpoints numerados con letreros flotantes.
-  - Teletransporte seguro de reaparición (`CharacterAdded`) hacia el nivel guardado.
-  - Recompensa por checkpoint (+15 monedas) y evento voluntario de reinicio.
-- **CoinSpawner.lua**: Monedas doradas giratorias con PointLight y tiempo de respawn de 12 segundos. Soporte para bonificación VIP (x2).
-- **DataStoreHandler.lua**:
-  - Sistema de guardado y carga seguro con reintentos (`MAX_RETRIES = 3`).
-  - Integración nativa con `leaderstats` oficial de Roblox (`Nivel` y `Monedas`).
-  - Auto-guardado periódico cada 3 minutos.
-  - Manejo crítico de cierre de servidor (`game:BindToClose`) para evitar pérdida de datos.
-- **MarketplaceHandler.lua**:
-  - Implementación oficial de `MarketplaceService.ProcessReceipt` para Developer Products.
-  - Verificación de posesión de Game Pass al entrar (`UserOwnsGamePassAsync`).
-  - Detección de compra de Game Pass en tiempo real y asignación de atributos.
-- **RemoteEventsSetup.lua**: Inicialización garantizada de eventos `BuyGamePass`, `BuyProduct`, `Notify` y `ResetToCheckpoint`.
+### 🔁 Sistema de Renacimientos (Rebirths)
+- **RebirthManager.lua**:
+  - Requisito de completar el Nivel 5 (Isla de Victoria).
+  - Multiplicador de monedas permanente (+50% por cada renacimiento).
+  - Efecto acumulativo con el Game Pass VIP (+100% adicional).
+  - Bonificación inmediata de +100 monedas al renacer.
+  - Sincronización oficial en la tabla de clasificación (`leaderstats.Renacer`).
 
-### Cliente (UI & UX)
-- **HUD.client.lua**:
-  - Interfaz moderna con contador de monedas y nivel actual.
-  - Botón de acceso rápido a la **Tienda** (`🛒 TIENDA`).
-  - Botón de reinicio al checkpoint actual (`🔄 REINICIAR`).
-  - Detección reactiva de atributos sin bucles pesados.
+### ✨ Sistema de Estelas Cosméticas (Trails)
+- **TrailManager.lua**:
+  - Catálogo de 4 estelas con físicas de iluminación y degradados cromáticos:
+    - *Arcoíris Cósmico* (100 🪙)
+    - *Fuego Volcánico* (250 🪙)
+    - *Ciber Neón* (450 🪙)
+    - *Oro Divino* (800 🪙)
+  - Acoplamiento dinámico a `HumanoidRootPart` con `Attachment` superior e inferior.
+  - Persistencia de inventario (`OwnedTrails`) y estela activa (`EquippedTrail`) en DataStore.
+  - Re-equipamiento automático al reaparecer tras caer o morir.
+
+### 🏃 Nuevas Mecánicas de Parkour
+- **ObbySetup.lua**:
+  - **Trampolines (Jump Pads):** Plataformas verdes de neón que impulsan al jugador hacia arriba y adelante para superar abismos.
+  - **Aceleradores (Speed Boosters):** Bandas naranjas de neón que otorgan velocidad x2 (WalkSpeed 32) durante 3 segundos.
+  - **Portal de Renacimiento Físico:** En la Isla de Victoria, con letrero interactivo y detección al pisarlo.
+  - Emisores de partículas de victoria (confetti multicolor).
+
+### 🛒 Tienda Multi-Pestaña y HUD Renovado
 - **StoreGui.client.lua**:
-  - Ventana modal estilizada con dos tarjetas de producto:
-    - Pase VIP (x2 monedas, +1000 monedas de bienvenida y tag VIP).
-    - Pack de 500 Monedas (compra repetible).
-  - Botones de compra conectados directamente con el servidor.
-- **NotificationHandler.client.lua**:
-  - Banners emergentes animados con `TweenService` para compras, recompensas y checkpoints.
+  - Nueva navegación por pestañas: **💎 ROBUX & PASES** y **✨ ESTELAS COSMÉTICAS**.
+  - Botones con estado en tiempo real: *Comprar*, *Equipar*, *✅ Equipado (Quitar)*.
+- **HUD.client.lua**:
+  - Indicador de multiplicador en vivo (`⚡ 1.5x`).
+  - Marcador de estela actualmente activa.
+  - Botón dinámico de renacer que se ilumina en dorado al llegar a la meta.
 
-### Configuración e Infraestructura
-- **default.project.json**: Estructura compatible con Rojo para sincronización automática con Studio.
-- **README.md**: Guía completa de uso e instrucciones detalladas para Roblox Studio.
+---
+
+## [1.0.0] - 2026-11-06 (Versión Completa y Funcional)
+- Implementación de los 5 niveles del Obby con lava letal.
+- Checkpoints con teletransporte y reaparición segura.
+- Monedas doradas giratorias con respawn.
+- Persistencia con DataStore y tabla de clasificación (`leaderstats`).
+- Integración de Marketplace (`ProcessReceipt` y Game Passes).

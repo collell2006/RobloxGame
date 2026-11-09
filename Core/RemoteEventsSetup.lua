@@ -25,6 +25,9 @@ local function initRemoteEvents()
     ensureEvent("BuyProduct")
     ensureEvent("Notify")
     ensureEvent("ResetToCheckpoint")
+    ensureEvent("BuyTrail")
+    ensureEvent("EquipTrail")
+    ensureEvent("RequestRebirth")
 
     print("[RemoteEventsSetup] Todos los RemoteEvents creados con éxito.")
     return eventsFolder

@@ -1,19 +1,18 @@
--- ObbySetup.lua – Genera un circuito de obstáculos (Obby) completo con obstáculos y lava
+-- ObbySetup.lua – Genera un circuito de obstáculos avanzado con trampolines, boosters y portal de renacimiento
 -- Colócalo en ServerScriptService/Core
 
 local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
 
 local ObbySetup = {}
 
 function ObbySetup.buildObby()
-    -- Limpiar si ya existe para evitar duplicados
     local existing = Workspace:FindFirstChild("Obby")
     if existing then
         existing:Destroy()
     end
 
     local obbyFolder = Instance.new("Folder")
-    -- Obby Folder
     obbyFolder.Name = "Obby"
     obbyFolder.Parent = Workspace
 
@@ -25,13 +24,17 @@ function ObbySetup.buildObby()
     platformsFolder.Name = "Platforms"
     platformsFolder.Parent = obbyFolder
 
+    local interactiveFolder = Instance.new("Folder")
+    interactiveFolder.Name = "Interactives"
+    interactiveFolder.Parent = obbyFolder
+
     -- =========================================================
     -- 1. PISO DE LAVA (Kill Floor)
     -- =========================================================
     local killFloor = Instance.new("Part")
     killFloor.Name = "KillFloor"
-    killFloor.Size = Vector3.new(1000, 4, 1000)
-    killFloor.Position = Vector3.new(0, -10, 200)
+    killFloor.Size = Vector3.new(1200, 4, 1200)
+    killFloor.Position = Vector3.new(0, -10, 250)
     killFloor.Anchored = true
     killFloor.CanCollide = true
     killFloor.Material = Enum.Material.Neon
@@ -46,11 +49,13 @@ function ObbySetup.buildObby()
         end
     end)
 
-    -- Función auxiliar para crear checkpoints
+    -- =========================================================
+    -- FUNCIONES AUXILIARES: Checkpoints, JumpPads y SpeedBoosters
+    -- =========================================================
     local function createCheckpoint(stageNumber, position)
         local pad = Instance.new("Part")
         pad.Name = "Checkpoint_" .. tostring(stageNumber)
-        pad.Size = Vector3.new(10, 1.5, 10)
+        pad.Size = Vector3.new(12, 1.5, 12)
         pad.Position = position
         pad.Anchored = true
         pad.Material = Enum.Material.SmoothPlastic
@@ -58,10 +63,9 @@ function ObbySetup.buildObby()
         pad:SetAttribute("StageNumber", stageNumber)
         pad.Parent = checkpointsFolder
 
-        -- Letrero indicador de nivel
         local billboard = Instance.new("BillboardGui")
-        billboard.Size = UDim2.new(0, 100, 0, 40)
-        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.Size = UDim2.new(0, 120, 0, 45)
+        billboard.StudsOffset = Vector3.new(0, 3.5, 0)
         billboard.AlwaysOnTop = true
         billboard.Parent = pad
 
@@ -71,20 +75,83 @@ function ObbySetup.buildObby()
         text.Text = "NIVEL " .. tostring(stageNumber)
         text.TextColor3 = Color3.fromRGB(255, 255, 255)
         text.TextStrokeTransparency = 0
-        text.Font = Enum.Font.SourceSansBold
+        text.Font = Enum.Font.FredokaOne
         text.TextSize = 22
         text.Parent = billboard
 
         return pad
     end
 
+    -- Trampolín / Salto Propulsado (Jump Pad)
+    local function createJumpPad(position, forwardVelocity, upVelocity)
+        local pad = Instance.new("Part")
+        pad.Name = "JumpPad"
+        pad.Size = Vector3.new(6, 1, 6)
+        pad.Position = position
+        pad.Anchored = true
+        pad.Material = Enum.Material.Neon
+        pad.Color = Color3.fromRGB(50, 255, 120)
+        pad.Parent = interactiveFolder
+
+        local arrow = Instance.new("BillboardGui")
+        arrow.Size = UDim2.new(0, 50, 0, 50)
+        arrow.StudsOffset = Vector3.new(0, 1.5, 0)
+        arrow.AlwaysOnTop = true
+        arrow.Parent = pad
+
+        local icon = Instance.new("TextLabel")
+        icon.Size = UDim2.new(1, 0, 1, 0)
+        icon.BackgroundTransparency = 1
+        icon.Text = "⬆️"
+        icon.TextSize = 26
+        icon.Parent = arrow
+
+        local debounce = false
+        pad.Touched:Connect(function(hit)
+            local char = hit.Parent
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if root and not debounce then
+                debounce = true
+                root.AssemblyLinearVelocity = Vector3.new(0, upVelocity or 65, forwardVelocity or 20)
+                task.wait(0.5)
+                debounce = false
+            end
+        end)
+        return pad
+    end
+
+    -- Cinta de Aceleración (Speed Booster)
+    local function createSpeedBooster(position)
+        local pad = Instance.new("Part")
+        pad.Name = "SpeedBooster"
+        pad.Size = Vector3.new(6, 0.8, 12)
+        pad.Position = position
+        pad.Anchored = true
+        pad.Material = Enum.Material.Neon
+        pad.Color = Color3.fromRGB(255, 160, 20)
+        pad.Parent = interactiveFolder
+
+        pad.Touched:Connect(function(hit)
+            local char = hit.Parent
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum and hum.WalkSpeed <= 16 then
+                hum.WalkSpeed = 32
+                task.delay(3, function()
+                    if hum and hum.Parent then
+                        hum.WalkSpeed = 16
+                    end
+                end)
+            end
+        end)
+        return pad
+    end
+
     -- =========================================================
-    -- ETAPA 1: Inicio y saltos básicos
+    -- ETAPA 1: Saltos básicos y Speed Booster
     -- =========================================================
     local startPos = Vector3.new(0, 5, 0)
-    local cp1 = createCheckpoint(1, startPos)
+    createCheckpoint(1, startPos)
 
-    -- SpawnLocation en checkpoint 1
     local spawnLoc = Instance.new("SpawnLocation")
     spawnLoc.Name = "StartSpawn"
     spawnLoc.Size = Vector3.new(6, 1, 6)
@@ -95,7 +162,6 @@ function ObbySetup.buildObby()
     spawnLoc.Duration = 0
     spawnLoc.Parent = obbyFolder
 
-    -- Plataformas etapa 1
     local zOffset = startPos.Z + 15
     for i = 1, 4 do
         local p = Instance.new("Part")
@@ -109,20 +175,22 @@ function ObbySetup.buildObby()
         zOffset = zOffset + 14
     end
 
-    -- =========================================================
-    -- ETAPA 2: Plataformas cilíndricas (Stepping Stones)
-    -- =========================================================
-    local cp2Pos = Vector3.new(0, 6, zOffset)
-    createCheckpoint(2, cp2Pos)
-    zOffset = zOffset + 15
+    createSpeedBooster(Vector3.new(0, 5, zOffset))
+    zOffset = zOffset + 14
 
-    for i = 1, 5 do
+    -- =========================================================
+    -- ETAPA 2: Cilindros con Jump Pad
+    -- =========================================================
+    createCheckpoint(2, Vector3.new(0, 6, zOffset))
+    zOffset = zOffset + 16
+
+    for i = 1, 4 do
         local cyl = Instance.new("Part")
         cyl.Name = "Stage2_Cylinder_" .. i
         cyl.Shape = Enum.PartType.Cylinder
         cyl.Size = Vector3.new(2, 6, 6)
         cyl.Orientation = Vector3.new(0, 0, 90)
-        cyl.Position = Vector3.new(math.sin(i * 1.2) * 8, 6 + (i * 0.8), zOffset)
+        cyl.Position = Vector3.new(math.sin(i * 1.3) * 8, 6 + (i * 0.8), zOffset)
         cyl.Anchored = true
         cyl.Material = Enum.Material.WoodPlanks
         cyl.Color = Color3.fromRGB(180, 120, 70)
@@ -130,33 +198,35 @@ function ObbySetup.buildObby()
         zOffset = zOffset + 14
     end
 
+    -- Trampolín hacia la siguiente etapa
+    createJumpPad(Vector3.new(0, 9.5, zOffset), 28, 65)
+    zOffset = zOffset + 24
+
     -- =========================================================
-    -- ETAPA 3: Plataformas que desaparecen (Fading Blocks)
+    -- ETAPA 3: Plataformas desvanecientes (Fading Blocks)
     -- =========================================================
-    local cp3Pos = Vector3.new(0, 11, zOffset)
-    createCheckpoint(3, cp3Pos)
+    createCheckpoint(3, Vector3.new(0, 11, zOffset))
     zOffset = zOffset + 16
 
     for i = 1, 4 do
         local fadePart = Instance.new("Part")
         fadePart.Name = "Stage3_FadingPlatform_" .. i
         fadePart.Size = Vector3.new(7, 2, 7)
-        fadePart.Position = Vector3.new(0, 11, zOffset)
+        fadePart.Position = Vector3.new((i % 2 == 0) and 3 or -3, 11, zOffset)
         fadePart.Anchored = true
         fadePart.Material = Enum.Material.Neon
         fadePart.Color = Color3.fromRGB(0, 180, 255)
         fadePart.Parent = platformsFolder
 
-        -- Lógica de desvanecimiento al pisar
         local isFading = false
         fadePart.Touched:Connect(function(hit)
             local char = hit.Parent
             if char and char:FindFirstChildOfClass("Humanoid") and not isFading then
                 isFading = true
-                task.wait(0.4)
+                task.wait(0.35)
                 for transparency = 0, 1, 0.2 do
                     fadePart.Transparency = transparency
-                    task.wait(0.05)
+                    task.wait(0.04)
                 end
                 fadePart.CanCollide = false
                 task.wait(2)
@@ -165,18 +235,16 @@ function ObbySetup.buildObby()
                 isFading = false
             end
         end)
-
         zOffset = zOffset + 16
     end
 
     -- =========================================================
-    -- ETAPA 4: Rayos Láser / Barras de Lava
+    -- ETAPA 4: Rayos Láser y Trampolín Final
     -- =========================================================
-    local cp4Pos = Vector3.new(0, 12, zOffset)
-    createCheckpoint(4, cp4Pos)
+    createCheckpoint(4, Vector3.new(0, 12, zOffset))
     zOffset = zOffset + 16
 
-    for i = 1, 4 do
+    for i = 1, 3 do
         local bridge = Instance.new("Part")
         bridge.Name = "Stage4_Bridge_" .. i
         bridge.Size = Vector3.new(6, 2, 14)
@@ -186,7 +254,6 @@ function ObbySetup.buildObby()
         bridge.Color = Color3.fromRGB(80, 80, 85)
         bridge.Parent = platformsFolder
 
-        -- Láser en el medio
         local laser = Instance.new("Part")
         laser.Name = "Laser"
         laser.Size = Vector3.new(6.2, 1.2, 1.2)
@@ -204,20 +271,19 @@ function ObbySetup.buildObby()
                 hum.Health = 0
             end
         end)
-
         zOffset = zOffset + 18
     end
 
     -- =========================================================
-    -- ETAPA 5: Isla de Victoria (Meta Final)
+    -- ETAPA 5: Isla de Victoria y Portal de Renacimiento
     -- =========================================================
     local cp5Pos = Vector3.new(0, 13, zOffset)
     local winPad = createCheckpoint(5, cp5Pos)
-    winPad.Size = Vector3.new(20, 2, 20)
+    winPad.Size = Vector3.new(24, 2, 24)
     winPad.Color = Color3.fromRGB(255, 215, 0)
     winPad.Material = Enum.Material.Neon
 
-    -- Trofeo en el centro
+    -- Trofeo Central
     local trophy = Instance.new("Part")
     trophy.Name = "VictoryTrophy"
     trophy.Size = Vector3.new(4, 8, 4)
@@ -228,7 +294,63 @@ function ObbySetup.buildObby()
     trophy.Color = Color3.fromRGB(255, 220, 50)
     trophy.Parent = obbyFolder
 
-    print("[ObbySetup] Obby con 5 niveles y piso de lava generado con éxito.")
+    -- Emisor de Confetti de Victoria
+    local confetti = Instance.new("ParticleEmitter")
+    confetti.Name = "VictoryConfetti"
+    confetti.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 215, 0)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 200)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 150)),
+    })
+    confetti.Size = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.6),
+        NumberSequenceKeypoint.new(1, 0.4),
+    })
+    confetti.Speed = NumberRange.new(10, 20)
+    confetti.Lifetime = NumberRange.new(2, 3)
+    confetti.Rate = 25
+    confetti.Parent = trophy
+
+    -- Portal de Renacimiento Físico
+    local rebirthPortal = Instance.new("Part")
+    rebirthPortal.Name = "RebirthPortalPad"
+    rebirthPortal.Size = Vector3.new(8, 1, 8)
+    rebirthPortal.Position = cp5Pos + Vector3.new(0, 1.2, 7)
+    rebirthPortal.Anchored = true
+    rebirthPortal.Material = Enum.Material.Neon
+    rebirthPortal.Color = Color3.fromRGB(180, 0, 255)
+    rebirthPortal.Parent = obbyFolder
+
+    local pBillboard = Instance.new("BillboardGui")
+    pBillboard.Size = UDim2.new(0, 140, 0, 40)
+    pBillboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    pBillboard.AlwaysOnTop = true
+    pBillboard.Parent = rebirthPortal
+
+    local pLabel = Instance.new("TextLabel")
+    pLabel.Size = UDim2.new(1, 0, 1, 0)
+    pLabel.BackgroundTransparency = 1
+    pLabel.Text = "🌀 PISA PARA RENACER"
+    pLabel.TextColor3 = Color3.fromRGB(230, 150, 255)
+    pLabel.Font = Enum.Font.FredokaOne
+    pLabel.TextSize = 16
+    pLabel.Parent = pBillboard
+
+    -- Detección de contacto con el portal de renacimiento
+    local debounce = false
+    rebirthPortal.Touched:Connect(function(hit)
+        local character = hit.Parent
+        local player = Players:GetPlayerFromCharacter(character)
+        if player and not debounce then
+            debounce = true
+            local RebirthManager = require(script.Parent:WaitForChild("RebirthManager"))
+            RebirthManager.ProcessRebirth(player)
+            task.wait(2)
+            debounce = false
+        end
+    end)
+
+    print("[ObbySetup] Circuito avanzado con trampolines, boosters y portal de renacimiento generado.")
     return checkpointsFolder
 end
 

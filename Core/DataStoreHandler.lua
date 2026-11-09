@@ -1,11 +1,12 @@
--- DataStoreHandler.lua – Sistema de persistencia seguro con reintentos y leaderstats
+-- DataStoreHandler.lua – Sistema de persistencia seguro con reintentos, leaderstats y renacimientos
 -- Colócalo en ServerScriptService/Core
 
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
-local PlayerDataStore = DataStoreService:GetDataStore("MiPrimerJuego_PlayerData_v1")
+local PlayerDataStore = DataStoreService:GetDataStore("MiPrimerJuego_PlayerData_v2")
 
 local MAX_RETRIES = 3
 local RETRY_DELAY = 1
@@ -13,7 +14,10 @@ local RETRY_DELAY = 1
 local DEFAULT_DATA = {
     Coins = 0,
     Stage = 1,
+    Rebirths = 0,
     Experience = 0,
+    EquippedTrail = "None",
+    OwnedTrails = {"None"},
 }
 
 -- Función auxiliar para reintentar operaciones de red
@@ -37,16 +41,21 @@ local function loadData(userId)
     end)
 
     if success and data then
-        -- Asegurar campos por defecto si faltan
         data.Coins = data.Coins or DEFAULT_DATA.Coins
         data.Stage = data.Stage or DEFAULT_DATA.Stage
+        data.Rebirths = data.Rebirths or DEFAULT_DATA.Rebirths
         data.Experience = data.Experience or DEFAULT_DATA.Experience
+        data.EquippedTrail = data.EquippedTrail or DEFAULT_DATA.EquippedTrail
+        data.OwnedTrails = data.OwnedTrails or DEFAULT_DATA.OwnedTrails
         return data
     else
         return {
             Coins = DEFAULT_DATA.Coins,
             Stage = DEFAULT_DATA.Stage,
+            Rebirths = DEFAULT_DATA.Rebirths,
             Experience = DEFAULT_DATA.Experience,
+            EquippedTrail = DEFAULT_DATA.EquippedTrail,
+            OwnedTrails = {"None"},
         }
     end
 end
@@ -62,6 +71,24 @@ local function saveData(userId, data)
     return success
 end
 
+-- Extraer datos actuales de los atributos del jugador
+local function getPlayerDataFromPlayer(player)
+    local ownedTrailsJson = player:GetAttribute("OwnedTrails") or '["None"]'
+    local ownedTable = {"None"}
+    pcall(function()
+        ownedTable = HttpService:JSONDecode(ownedTrailsJson)
+    end)
+
+    return {
+        Coins = player:GetAttribute("Coins") or 0,
+        Stage = player:GetAttribute("Stage") or 1,
+        Rebirths = player:GetAttribute("Rebirths") or 0,
+        Experience = player:GetAttribute("Experience") or 0,
+        EquippedTrail = player:GetAttribute("EquippedTrail") or "None",
+        OwnedTrails = ownedTable,
+    }
+end
+
 -- Configuración de leaderstats visibles en la lista de jugadores de Roblox
 local function setupPlayer(player)
     local data = loadData(player.UserId)
@@ -69,7 +96,10 @@ local function setupPlayer(player)
     -- Guardar en atributos
     player:SetAttribute("Coins", data.Coins)
     player:SetAttribute("Stage", data.Stage)
+    player:SetAttribute("Rebirths", data.Rebirths)
     player:SetAttribute("Experience", data.Experience)
+    player:SetAttribute("EquippedTrail", data.EquippedTrail)
+    player:SetAttribute("OwnedTrails", HttpService:JSONEncode(data.OwnedTrails))
 
     -- Crear carpeta leaderstats oficial de Roblox
     local leaderstats = Instance.new("Folder")
@@ -86,7 +116,12 @@ local function setupPlayer(player)
     coinsVal.Value = data.Coins
     coinsVal.Parent = leaderstats
 
-    -- Sincronizar atributos con leaderstats
+    local rebirthVal = Instance.new("IntValue")
+    rebirthVal.Name = "Renacer"
+    rebirthVal.Value = data.Rebirths
+    rebirthVal.Parent = leaderstats
+
+    -- Sincronizar atributos con leaderstats reactivamente
     player:GetAttributeChangedSignal("Coins"):Connect(function()
         coinsVal.Value = player:GetAttribute("Coins") or 0
     end)
@@ -94,25 +129,25 @@ local function setupPlayer(player)
     player:GetAttributeChangedSignal("Stage"):Connect(function()
         stageVal.Value = player:GetAttribute("Stage") or 1
     end)
+
+    player:GetAttributeChangedSignal("Rebirths"):Connect(function()
+        rebirthVal.Value = player:GetAttribute("Rebirths") or 0
+    end)
 end
 
 local function onPlayerRemoving(player)
-    local data = {
-        Coins = player:GetAttribute("Coins") or 0,
-        Stage = player:GetAttribute("Stage") or 1,
-        Experience = player:GetAttribute("Experience") or 0,
-    }
+    local data = getPlayerDataFromPlayer(player)
     saveData(player.UserId, data)
 end
 
 -- Guardado seguro al cerrar el servidor (BindToClose)
 game:BindToClose(function()
-    print("Servidor cerrándose. Guardando datos de todos los jugadores...")
+    print("[DataStore] Servidor cerrándose. Guardando datos de todos los jugadores...")
     for _, player in ipairs(Players:GetPlayers()) do
         onPlayerRemoving(player)
     end
     if RunService:IsStudio() then
-        task.wait(2) -- Dar tiempo en Studio
+        task.wait(2)
     end
 end)
 
@@ -121,11 +156,7 @@ task.spawn(function()
     while true do
         task.wait(180)
         for _, player in ipairs(Players:GetPlayers()) do
-            local data = {
-                Coins = player:GetAttribute("Coins") or 0,
-                Stage = player:GetAttribute("Stage") or 1,
-                Experience = player:GetAttribute("Experience") or 0,
-            }
+            local data = getPlayerDataFromPlayer(player)
             saveData(player.UserId, data)
         end
     end
@@ -138,4 +169,5 @@ local DataStoreHandler = {}
 DataStoreHandler.Load = loadData
 DataStoreHandler.Save = saveData
 DataStoreHandler.SetupPlayer = setupPlayer
+DataStoreHandler.GetPlayerData = getPlayerDataFromPlayer
 return DataStoreHandler

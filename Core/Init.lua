@@ -16,15 +16,22 @@ RemoteSetup()
 local DataStore = require(script.Parent:WaitForChild("DataStoreHandler"))
 local Marketplace = require(script.Parent:WaitForChild("MarketplaceHandler"))
 
--- 3. Generar el mundo del juego (Obby y Lava)
+-- 3. Cargar sistemas de Renacimientos y Estelas Cosméticas
+local RebirthManager = require(script.Parent:WaitForChild("RebirthManager"))
+RebirthManager.Init()
+
+local TrailManager = require(script.Parent:WaitForChild("TrailManager"))
+TrailManager.Init()
+
+-- 4. Generar el mundo del juego (Obby, Trampolines, Boosters y Lava)
 local Obby = require(script.Parent:WaitForChild("ObbySetup"))
 local checkpointsFolder = Obby.buildObby()
 
--- 4. Inicializar sistema de Checkpoints y Respawn
+-- 5. Inicializar sistema de Checkpoints y Respawn
 local CheckpointManager = require(script.Parent:WaitForChild("CheckpointManager"))
 CheckpointManager.Init(checkpointsFolder)
 
--- 5. Generar monedas animadas sobre las plataformas
+-- 6. Generar monedas animadas con partículas
 local CoinSpawner = require(script.Parent:WaitForChild("CoinSpawner"))
 CoinSpawner.spawnCoins()
 
@@ -38,6 +45,8 @@ local Init = {
     CoinSpawner = CoinSpawner,
     DataStore = DataStore,
     Marketplace = Marketplace,
+    RebirthManager = RebirthManager,
+    TrailManager = TrailManager,
 }
 
 return Init
